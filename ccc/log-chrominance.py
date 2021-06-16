@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2 as cv2
 
 def rgb2uvy(rgb) -> np.ndarray:
     rgb_array = np.array(rgb)
@@ -79,8 +80,70 @@ class Histogram:
         
         return colorhist
 
+def test3():
+    img1 = cv2.imread('datasets/Color-checker (by Shi) (2010)/png_canon1d/cs/chroma/data/canon_dataset/568_dataset/png/8D5U5524.png')
+    img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB).astype(np.float64)
+    img1 /= np.amax(img1)
+    plt.imshow(img1)
+    plt.show()
+    print(img1)
+    # img1 *= 255
+    # img1[img1 == 0] = 1
+    # img1_uvy = rgb2uvy(img1)
+    # hist = Histogram(0.0125, (-256 * 0.025, 256 * 0.025), (-256 * 0.025, 256 * 0.025))
+    # h, _, _ = hist.get_hist(img1_uvy)
+    # plt.figure(figsize=(15, 15))
+    # plt.imshow(h)
+    # plt.show()
+
+def test4():
+    img1 = cv2.imread('/media/kvsoshin/Transcend/Work/cube++/SimpleCube++/train/PNG/00_0044.png')
+    img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+    plt.imshow(img1)
+    plt.show()
+    illum = np.array([0.20305266848652131,0.4707563192426342, 0.3261910122708445])
+    img1_illum = img1.astype(np.float64) / illum
+    img1_illum = np.uint8(img1_illum / np.amax(img1_illum) * 255)
+    plt.imshow(img1_illum)
+    plt.show()
+    # exit()
+    # print(img1.max())
+    # exit()
+    img1 = img1.reshape((-1, 3))
+    img2 = []
+    for c in img1:
+        if not 0 in c:
+            img2.append(c)
+    img2 = np.array(img2)
+    img1_uvy = rgb2uvy(img2)
+    print(img1_uvy.shape)
+    
+    
+    img1_illum1 = img1_illum.reshape((-1, 3))
+    img1_illum2 = []
+    for c in img1_illum1:
+        if not 0 in c:
+            img1_illum2.append(c)
+    img1_illum2 = np.array(img1_illum2)
+    img1_illum1_uvy = rgb2uvy(img1_illum2)
+    
+    
+    hist = Histogram(0.0125, (-64 * 0.025, 64 * 0.025), (-64 * 0.025, 64 * 0.025))
+    # h, _, _ = hist.get_hist(img1_uvy)
+    # plt.figure(figsize=(15, 15))
+    # plt.imshow(h)
+    # plt.show()
 
 
+
+    chist = hist.get_colorhist(img1_uvy, img2)
+    chist2 = hist.get_colorhist(img1_illum1_uvy, img1_illum1)
+    plt.figure(figsize=(15, 7))
+    plt.subplot(121)
+    plt.imshow(chist)
+    plt.subplot(122)
+    plt.imshow(chist2)
+    plt.show()
 
 def test2():
     x = np.random.randn(300)
@@ -103,7 +166,7 @@ def test():
 
 
 if __name__ == '__main__':
-    test2()
+    test4()
 
 
 
