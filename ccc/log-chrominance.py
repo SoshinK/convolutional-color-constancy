@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2 as cv2
-
+from numba import jit, prange
 def rgb2uvy(rgb) -> np.ndarray:
     rgb_array = np.array(rgb)
     assert rgb_array.shape[1] == 3, "Wrong input array shape"
@@ -11,6 +11,38 @@ def rgb2uvy(rgb) -> np.ndarray:
     I_y = np.linalg.norm(rgb_array, axis=1)
     I_uv = np.array([I_u, I_v, I_y]).T
     return I_uv
+
+@jit(parallel=True, nopython=True, fastmath=True, cache=True)
+def _count_hist(uvy_array, num_ticks_u, num_ticks_v, u_shift, v_shift):
+    hist = np.zeros((num_ticks_u, num_ticks_v))
+
+    for i in prange(len(uvy_array)):
+        # print(point[0], u_shift, point[0] - u_shift)
+        hist[int(uvy_array[i][0]) - u_shift, int(uvy_array[i][1]) - v_shift] += uvy_array[i][2]
+    return hist
+
+@jit(parallel=True, nopython=True, fastmath=True, cache=True)
+def _count_color_hist(uvy_array, rgb_array, num_ticks_u, num_ticks_v, u_shift, v_shift):
+    hist = np.zeros((num_ticks_u, num_ticks_v))
+    colorhist = np.zeros((num_ticks_u, num_ticks_v, 3))
+    numbers = np.zeros((num_ticks_u, num_ticks_v))
+    
+    for i in prange(len(uvy_array)):
+        # print(point[0], u_shift, point[0] - u_shift)
+        hist[int(uvy_array[i][0]) - u_shift, int(uvy_array[i][1]) - v_shift] += uvy_array[i][2]
+        colorhist[int(uvy_array[i][0]) - u_shift, int(uvy_array[i][1]) - v_shift] += rgb_array[i].astype(np.float64)
+        numbers[int(uvy_array[i][0]) - u_shift, int(uvy_array[i][1]) - v_shift] += 1
+    
+    # numbers[numbers == 0] = 1
+    for i in prange(len(numbers)):
+        if numbers[i] == 0:
+            numbers[i] = 1
+    numbers = np.expand_dims(numbers, -1)
+    print(colorhist.shape, numbers.shape)
+    colorhist = colorhist / numbers#[:, :, None]
+    
+    colorhist /= 255
+    return hist, colorhist
 
 class Histogram:
     def __init__(self, epsilon, u_range=None, v_range=None):
@@ -33,15 +65,37 @@ class Histogram:
         u_shift = int(round(self.u_range[0] / self.epsilon))
         v_shift = int(round(self.v_range[0] / self.epsilon))
 
-        hist = np.zeros((num_ticks_u, num_ticks_v))
+        # hist = np.zeros((num_ticks_u, num_ticks_v))
 
-        for point in uvy_array:
-            # print(point[0], u_shift, point[0] - u_shift)
-            hist[int(point[0]) - u_shift, int(point[1]) - v_shift] += point[2]
-        
+        # for point in uvy_array:
+        #     # print(point[0], u_shift, point[0] - u_shift)
+        #     hist[int(point[0]) - u_shift, int(point[1]) - v_shift] += point[2]
+
+        hist = _count_hist(uvy_array, num_ticks_u, num_ticks_v, u_shift, v_shift)
+
         if is_normalised:
             hist = np.sqrt(hist / hist.sum())
         return hist, u_coords, v_coords
+    
+    def get_hist_numpy(self, uvy_array, is_normalised=True):
+        uvy_array = np.array(uvy_array)
+        assert uvy_array.shape[1] == 3, "Wrong input array shape"
+        h, u_coords, v_coords = np.histogram2d(
+            uvy_array[:, 0], 
+            uvy_array[:, 1], 
+            range=(self.u_range, self.v_range), 
+            bins=(int((self.u_range[1] - self.u_range[0]) / self.epsilon), int((self.u_range[1] - self.u_range[0]) / self.epsilon)),
+            density=False)
+        h = h.astype(np.float64)
+
+        if is_normalised:
+            h = np.sqrt(h / np.sum(h))
+
+        return h, u_coords, v_coords
+    # def get_colorhist_numpy(self, uvy_array, rgb_array, is_normalised=True):
+
+
+
     def get_colorhist(self, uvy_array, rgb_array, is_normalised=True):
         uvy_array = np.array(uvy_array)
         assert uvy_array.shape[1] == 3, "Wrong input array shape"
@@ -56,20 +110,20 @@ class Histogram:
         u_shift = int(round(self.u_range[0] / self.epsilon))
         v_shift = int(round(self.v_range[0] / self.epsilon))
 
-        hist = np.zeros((num_ticks_u, num_ticks_v))
-        colorhist = np.zeros((num_ticks_u, num_ticks_v, 3))
-        numbers = np.zeros((num_ticks_u, num_ticks_v))
+        # hist = np.zeros((num_ticks_u, num_ticks_v))
+        # colorhist = np.zeros((num_ticks_u, num_ticks_v, 3))
+        # numbers = np.zeros((num_ticks_u, num_ticks_v))
         
-        for point, rgb in zip(uvy_array, rgb_array):
-            # print(point[0], u_shift, point[0] - u_shift)
-            hist[int(point[0]) - u_shift, int(point[1]) - v_shift] += point[2]
-            colorhist[int(point[0]) - u_shift, int(point[1]) - v_shift] += rgb.astype(np.float64)
-            numbers[int(point[0]) - u_shift, int(point[1]) - v_shift] += 1
+        # for point, rgb in zip(uvy_array, rgb_array):
+        #     # print(point[0], u_shift, point[0] - u_shift)
+        #     hist[int(point[0]) - u_shift, int(point[1]) - v_shift] += point[2]
+        #     colorhist[int(point[0]) - u_shift, int(point[1]) - v_shift] += rgb.astype(np.float64)
+        #     numbers[int(point[0]) - u_shift, int(point[1]) - v_shift] += 1
         
-        numbers[numbers == 0] = 1
-        colorhist = colorhist / numbers[:, :, None]
-        
-        colorhist /= 255
+        # numbers[numbers == 0] = 1
+        # colorhist = colorhist / numbers[:, :, None]
+        # colorhist /= 255
+        hist, colorhist = _count_color_hist(uvy_array, rgb_array, num_ticks_u, num_ticks_v, u_shift, v_shift)
         
         
         if is_normalised:
@@ -88,13 +142,13 @@ def test3():
     plt.show()
     print(img1)
     # img1 *= 255
-    # img1[img1 == 0] = 1
-    # img1_uvy = rgb2uvy(img1)
-    # hist = Histogram(0.0125, (-256 * 0.025, 256 * 0.025), (-256 * 0.025, 256 * 0.025))
-    # h, _, _ = hist.get_hist(img1_uvy)
-    # plt.figure(figsize=(15, 15))
-    # plt.imshow(h)
-    # plt.show()
+    img1[img1 == 0] = 1
+    img1_uvy = rgb2uvy(img1)
+    hist = Histogram(0.0125, (-256 * 0.025, 256 * 0.025), (-256 * 0.025, 256 * 0.025))
+    h, _, _ = hist.get_hist(img1_uvy)
+    plt.figure(figsize=(15, 15))
+    plt.imshow(h)
+    plt.show()
 
 def test4():
     img1 = cv2.imread('/media/kvsoshin/Transcend/Work/cube++/SimpleCube++/train/PNG/00_0044.png')
@@ -129,11 +183,19 @@ def test4():
     
     
     hist = Histogram(0.0125, (-64 * 0.025, 64 * 0.025), (-64 * 0.025, 64 * 0.025))
-    # h, _, _ = hist.get_hist(img1_uvy)
-    # plt.figure(figsize=(15, 15))
-    # plt.imshow(h)
-    # plt.show()
-
+    h, _, _ = hist.get_hist(img1_uvy)
+    plt.figure(figsize=(15, 15))
+    plt.imshow(h)
+    plt.show()
+    plt.figure(figsize=(15, 15))
+    h, _, _ = hist.get_hist_numpy(img1_uvy)
+    plt.imshow(h)
+    plt.show()
+    h, _, _ = hist.get_hist(img1_uvy)
+    plt.figure(figsize=(15, 15))
+    plt.imshow(h)
+    plt.show()
+    # exit()
 
 
     chist = hist.get_colorhist(img1_uvy, img2)
@@ -157,7 +219,9 @@ def test2():
     hist = Histogram(0.2, (-5, 5), (-5, 5))
     h, u_range, v_range = hist.get_hist(points, is_normalised=False)
     plt.imshow(h)
-
+    plt.show()
+    h, _, _ = np.histogram2d(points[:, 0], points[:, 1], range=((-5, 5), (-5, 5)), bins=int(10 / 0.2))
+    plt.imshow(h)
     plt.show()
 
 def test():
