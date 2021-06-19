@@ -34,15 +34,17 @@ def _count_color_hist(uvy_array, rgb_array, num_ticks_u, num_ticks_v, u_shift, v
         numbers[int(uvy_array[i][0]) - u_shift, int(uvy_array[i][1]) - v_shift] += 1
     
     # numbers[numbers == 0] = 1
-    for i in prange(len(numbers)):
-        if numbers[i] == 0:
-            numbers[i] = 1
-    numbers = np.expand_dims(numbers, -1)
-    print(colorhist.shape, numbers.shape)
-    colorhist = colorhist / numbers#[:, :, None]
+    # for i in prange(len(numbers)):
+    #     for j in prange(len(numbers[i])):
+    #         if numbers[i][j] != 0:
+    #             for k in prange(len())
+    #             colorhist[i][j] = colorhist[i][j] / np.array([numbers[i], numbers[i], numbers[i]])
+    # numbers = np.expand_dims(numbers, -1)
+    # print(colorhist.shape, numbers.shape)
+    # colorhist = colorhist / numbers#[:, :, None]
     
-    colorhist /= 255
-    return hist, colorhist
+    # colorhist /= 255
+    return hist, colorhist, numbers
 
 class Histogram:
     def __init__(self, epsilon, u_range=None, v_range=None):
@@ -120,10 +122,10 @@ class Histogram:
         #     colorhist[int(point[0]) - u_shift, int(point[1]) - v_shift] += rgb.astype(np.float64)
         #     numbers[int(point[0]) - u_shift, int(point[1]) - v_shift] += 1
         
-        # numbers[numbers == 0] = 1
-        # colorhist = colorhist / numbers[:, :, None]
-        # colorhist /= 255
-        hist, colorhist = _count_color_hist(uvy_array, rgb_array, num_ticks_u, num_ticks_v, u_shift, v_shift)
+        hist, colorhist, numbers = _count_color_hist(uvy_array, rgb_array, num_ticks_u, num_ticks_v, u_shift, v_shift)
+        numbers[numbers == 0] = 1
+        colorhist = colorhist / numbers[:, :, None]
+        colorhist /= 255
         
         
         if is_normalised:
