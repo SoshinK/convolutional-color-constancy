@@ -19,18 +19,19 @@ class Histogram:
         self.epsilon = epsilon
         self.u_range = u_range
         self.v_range = v_range
+        self.num_ticks_u = int(round((self.u_range[1] - self.u_range[0]) / self.epsilon)) + 1
+        self.num_ticks_v = int(round((self.v_range[1] - self.v_range[0]) / self.epsilon)) + 1
+
+        self.u_coords = np.linspace(*self.u_range, self.num_ticks_u)
+        self.v_coords = np.linspace(*self.v_range, self.num_ticks_v)
+
     
     def get_hist(self, uvy_array, is_normalised=True):
         uvy_array = np.array(uvy_array)
         assert uvy_array.shape[1] == 3, "Wrong input array shape"
         uvy_array = uvy_array / self.epsilon
         uvy_array[:,:2] = np.round(uvy_array[:,:2])
-        num_ticks_u = int(round((self.u_range[1] - self.u_range[0]) / self.epsilon)) + 1
-        num_ticks_v = int(round((self.v_range[1] - self.v_range[0]) / self.epsilon)) + 1
-
-        u_coords = np.linspace(*self.u_range, num_ticks_u)
-        v_coords = np.linspace(*self.v_range, num_ticks_v)
-
+        
         u_shift = int(round(self.u_range[0] / self.epsilon))
         v_shift = int(round(self.v_range[0] / self.epsilon))
 
@@ -40,11 +41,11 @@ class Histogram:
         #     # print(point[0], u_shift, point[0] - u_shift)
         #     hist[int(point[0]) - u_shift, int(point[1]) - v_shift] += point[2]
 
-        hist = _count_hist(uvy_array, num_ticks_u, num_ticks_v, u_shift, v_shift)
+        hist = _count_hist(uvy_array, self.num_ticks_u, self.num_ticks_v, u_shift, v_shift)
 
         if is_normalised:
             hist = np.sqrt(hist / hist.sum())
-        return hist, u_coords, v_coords
+        return hist
     
     def get_hist_numpy(self, uvy_array, is_normalised=True):
         uvy_array = np.array(uvy_array)
@@ -70,11 +71,11 @@ class Histogram:
         assert uvy_array.shape[1] == 3, "Wrong input array shape"
         uvy_array = uvy_array / self.epsilon
         uvy_array[:,:2] = np.round(uvy_array[:,:2])
-        num_ticks_u = int(round((self.u_range[1] - self.u_range[0]) / self.epsilon)) + 1
-        num_ticks_v = int(round((self.v_range[1] - self.v_range[0]) / self.epsilon)) + 1
+        # num_ticks_u = int(round((self.u_range[1] - self.u_range[0]) / self.epsilon)) + 1
+        # num_ticks_v = int(round((self.v_range[1] - self.v_range[0]) / self.epsilon)) + 1
 
-        u_coords = np.linspace(*self.u_range, num_ticks_u)
-        v_coords = np.linspace(*self.v_range, num_ticks_v)
+        # u_coords = np.linspace(*self.u_range, num_ticks_u)
+        # v_coords = np.linspace(*self.v_range, num_ticks_v)
 
         u_shift = int(round(self.u_range[0] / self.epsilon))
         v_shift = int(round(self.v_range[0] / self.epsilon))
@@ -89,7 +90,7 @@ class Histogram:
         #     colorhist[int(point[0]) - u_shift, int(point[1]) - v_shift] += rgb.astype(np.float64)
         #     numbers[int(point[0]) - u_shift, int(point[1]) - v_shift] += 1
         
-        hist, colorhist, numbers = _count_color_hist(uvy_array, rgb_array, num_ticks_u, num_ticks_v, u_shift, v_shift)
+        hist, colorhist, numbers = _count_color_hist(uvy_array, rgb_array, self.num_ticks_u, self.num_ticks_v, u_shift, v_shift)
         numbers[numbers == 0] = 1
         colorhist = colorhist / numbers[:, :, None]
         colorhist /= 255
@@ -179,24 +180,19 @@ def test4():
     
     
     img1_illum1 = img1_illum.reshape((-1, 3))
-    img1_illum2 = []
-    for c in img1_illum1:
-        if not 0 in c:
-            img1_illum2.append(c)
+    img1_illum2 = img1_illum1[~np.all(img1_illum1 == 0, axis=1)]
     img1_illum2 = np.array(img1_illum2)
     img1_illum1_uvy = rgb2uvy(img1_illum2)
     
     
     hist = Histogram(0.0125, (-64 * 0.025, 64 * 0.025), (-64 * 0.025, 64 * 0.025))
-    h, _, _ = hist.get_hist(img1_uvy)
+    h= hist.get_hist(img1_uvy)
     plt.figure(figsize=(15, 15))
     plt.imshow(h)
     plt.show()
-    plt.figure(figsize=(15, 15))
-    h, _, _ = hist.get_hist_numpy(img1_uvy)
-    plt.imshow(h)
-    plt.show()
-    h, _, _ = hist.get_hist(img1_uvy)
+    
+    
+    h= hist.get_hist(img1_uvy)
     plt.figure(figsize=(15, 15))
     plt.imshow(h)
     plt.show()
@@ -225,7 +221,7 @@ def test2():
     h, u_range, v_range = hist.get_hist(points, is_normalised=False)
     plt.imshow(h)
     plt.show()
-    h, _, _ = np.histogram2d(points[:, 0], points[:, 1], range=((-5, 5), (-5, 5)), bins=int(10 / 0.2))
+    h= np.histogram2d(points[:, 0], points[:, 1], range=((-5, 5), (-5, 5)), bins=int(10 / 0.2))
     plt.imshow(h)
     plt.show()
 

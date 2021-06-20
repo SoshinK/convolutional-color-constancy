@@ -21,7 +21,7 @@ class LogChromHist(Augmentation):
         img = img[~np.all(img == 0, axis=1)]
         img_uvy = rgb2uvy(img)
         if mode == 'hist':
-            return self.histogram.get_hist(img_uvy)[0]
+            return self.histogram.get_hist(img_uvy)
         if mode == 'color_hist':
             return self.histogram.get_colorhist(img_uvy, img.reshape((-1, 3)))
         else:
