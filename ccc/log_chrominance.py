@@ -169,9 +169,10 @@ def test4():
     # exit()
     img1 = img1.reshape((-1, 3))
     img2 = []
-    for c in img1:
-        if not 0 in c:
-            img2.append(c)
+    # for c in img1:
+    #     if not 0 in c:
+    #         img2.append(c)
+    img2 = img1[~np.all(img1 == 0, axis=1)]
     img2 = np.array(img2)
     img1_uvy = rgb2uvy(img2)
     print(img1_uvy.shape)
