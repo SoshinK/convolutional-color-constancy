@@ -66,7 +66,7 @@ class GaussianPyramid:
             raise RuntimeError("Filters haven't been fitted yet")
         file = Path(file)
         for i, f in enumerate(self.filters):
-            np.save(file / f'filer_{i}.npy', f)
+            np.save(file / f'filter_{i}.npy', f)
 
 
 def test():
