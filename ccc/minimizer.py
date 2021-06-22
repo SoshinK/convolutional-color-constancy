@@ -1,8 +1,9 @@
 import numpy as np
-import scipy
+
 from scipy.optimize import minimize
 from scipy.signal import convolve2d
-import tqdm
+
+import cv2 as cv2
 from dataset import Dataset, LogChromHist, CubePlusPlus
 
 
@@ -26,14 +27,21 @@ def fun_c(gt_uv, l_array, u_range, v_range):
     return c_array
 
 def loss_fn(x, train_imgs, data_gt, l_array, lambda_param, u_range, v_range):
-    kernel = x.reshape((5, 5))
+    kernel = x.reshape((int(np.sqrt(x.shape[0])), int(np.sqrt(x.shape[0]))))
     loss = 0
     for img, gt in zip(train_imgs, data_gt):
         p = fun_p(img, kernel)
-        c = fun_c(gt, l_array, u_range, v_range)
+        c = cv2.resize(fun_c(gt, l_array, u_range, v_range), (p.shape[0], p.shape[1]))
         loss += (p * c).sum()
     loss += lambda_param * (kernel ** 2).sum()
     return loss
+
+def fit_filter(train_imgs, data_gt, lambda_regularization, filter_size, u_ticks, v_ticks):
+    print("Composing l_array...")
+    l_array = fun_l(u_ticks, v_ticks)
+    print("Minimizing...")
+    res = minimize(loss_fn, np.zeros((filter_size ** 2,)), args=(train_imgs, data_gt, l_array, lambda_regularization, u_ticks, v_ticks), method='L-BFGS-B', tol=1e-6)
+    return res.x
 
 def train(lambda_param):
     lg = LogChromHist(0.0125, (-64 * 0.025, 64 * 0.025), (-64 * 0.025, 64 * 0.025))

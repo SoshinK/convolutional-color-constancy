@@ -27,6 +27,12 @@ class LogChromHist(Augmentation):
         else:
             raise ValueError("Wrong mode")
 
+class Resize(Augmentation):
+    def __init__(self, dsize):
+        self.dsize = dsize
+    def __call__(self, img):
+        return cv2.resize(img, self.dsize, interpolation=cv2.INTER_LINEAR)
+
 class AugList(Augmentation):
     def __init__(self, augmentations_list):
         super().__init__()
@@ -35,7 +41,9 @@ class AugList(Augmentation):
         img = img.copy()
         for aug in self.augmentations_list:
             img = aug(img)
-        return img
+        return img'
+    def append(self, new_transform):
+        self.augmentations_list.append(new_transform)
 
 class Dataset:
     def __init__(self, dataset_path, split, size, augmentations):
