@@ -41,16 +41,17 @@ class AugList(Augmentation):
         img = img.copy()
         for aug in self.augmentations_list:
             img = aug(img)
-        return img'
+        return img
     def append(self, new_transform):
         self.augmentations_list.append(new_transform)
 
 class Dataset:
-    def __init__(self, dataset_path, split, size, augmentations):
+    def __init__(self, dataset_path, split, size, augmentations, return_gt_rgb=False):
         self.dataset_path = Path(dataset_path)
         self.size= size
         self.augmentations = augmentations
         self.split = split
+        self.return_gt_rgb = return_gt_rgb
 
         if self.size is None:
             self.data_samples = self._data_samples()
@@ -58,7 +59,7 @@ class Dataset:
             self.data_samples = self._data_samples()[:self.size]#[img_name for img_name in (self.dataset_path / self.split).glob('*.png')]
         self.gt_csv = self._gt_csv()
         self.image_path = self._image_path()
-
+    
     def _gt_csv(self):
         raise NotImplementedError
     def _image_path(self):
@@ -71,6 +72,11 @@ class Dataset:
         img = cv2.imread(str(img_name))
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float64)
 
+        if self.return_gt_rgb:
+            if self.augmentations is None:
+                return img, np.array(self.gt_csv[img_name.stem])
+            else:
+                return self.augmentations(img), np.array(self.gt_csv[img_name.stem])
         if self.augmentations is None:
             return img, rgb2uvy([self.gt_csv[img_name.stem]])[0, :2]
         else:
@@ -90,8 +96,10 @@ class Dataset:
 
 
 class CubePlusPlus(Dataset):
-    def __init__(self, dataset_path, split, size, augmentations):
-        super().__init__(dataset_path, split, size, augmentations)
+    def __init__(self, dataset_path, split, size, augmentations, return_gt_rgb=False):
+        super().__init__(dataset_path, split, size, augmentations, return_gt_rgb)
+    def copy(self):
+        return CubePlusPlus(self.dataset_path, self.split, self.size, self.augmentations, self.return_gt_rgb)
     def _gt_csv(self):
         with open(self.dataset_path / self.split / 'gt.csv', mode='r') as infile:
             reader = csv.reader(infile)

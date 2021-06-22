@@ -12,6 +12,13 @@ def rgb2uvy(rgb) -> np.ndarray:
     I_uv = np.array([I_u, I_v, I_y]).T
     return I_uv
 
+def illum_uvy2illum_rgb(illum_uv):
+    illum_uv = np.array(illum_uv)
+    z = np.sqrt(np.exp(-illum_uv[:, 0]) ** 2 + np.exp(-illum_uv[:, 1]) ** 2 + 1)
+    r = np.exp(-illum_uv[:, 0]) / z
+    g = 1 / z
+    b = np.exp(-illum_uv[:, 1]) / z
+    return np.array([r, g, b]).T
 
 class Histogram:
     def __init__(self, epsilon, u_range=None, v_range=None):
@@ -19,8 +26,8 @@ class Histogram:
         self.epsilon = epsilon
         self.u_range = u_range
         self.v_range = v_range
-        self.num_ticks_u = int(round((self.u_range[1] - self.u_range[0]) / self.epsilon)) + 1
-        self.num_ticks_v = int(round((self.v_range[1] - self.v_range[0]) / self.epsilon)) + 1
+        self.num_ticks_u = int(round((self.u_range[1] - self.u_range[0]) / self.epsilon))
+        self.num_ticks_v = int(round((self.v_range[1] - self.v_range[0]) / self.epsilon))
 
         self.u_coords = np.linspace(*self.u_range, self.num_ticks_u)
         self.v_coords = np.linspace(*self.v_range, self.num_ticks_v)
