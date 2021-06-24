@@ -2,12 +2,12 @@ import numpy as np
 from pathlib import Path
 import tqdm
 import cv2 as cv2
-from minimizer import fit_filter
 from scipy.signal import convolve2d
 import matplotlib.pyplot as plt
 
-from dataset import Dataset, AugList, LogChromHist, Resize, CubePlusPlus
-from log_chrominance import illum_uvy2illum_rgb
+from ccc.minimizer import fit_filter
+from ccc.dataset import Dataset, AugList, LogChromHist, Resize, CubePlusPlus
+from ccc.log_chrominance import illum_uvy2illum_rgb
 
 class GaussianPyramid:
     def __init__(self, num_levels, filter_size=5):

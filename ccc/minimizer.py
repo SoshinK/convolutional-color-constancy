@@ -4,7 +4,7 @@ from scipy.optimize import minimize
 from scipy.signal import convolve2d
 
 import cv2 as cv2
-from dataset import Dataset, LogChromHist, CubePlusPlus
+from .dataset import Dataset, LogChromHist, CubePlusPlus
 
 
 def fun_p(img, filter):
@@ -46,7 +46,7 @@ def fit_filter(train_imgs, data_gt, lambda_regularization, filter_size, u_ticks,
 def train(lambda_param):
     lg = LogChromHist(0.0125, (-64 * 0.025, 64 * 0.025), (-64 * 0.025, 64 * 0.025))
     print("Loading dataset...")
-    dataset = CubePlusPlus('/media/kvsoshin/Transcend/Work/cube++/SimpleCube++', 'train', 5, lg)
+    dataset = CubePlusPlus('/media/kvsoshin/Transcend/Work/cube++/SimpleCube++', 'train', None, lg)
     train_imgs, data_gt = dataset.get_data()
     print(train_imgs.shape, data_gt.shape)
     # exit()

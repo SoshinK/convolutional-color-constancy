@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import tqdm
 import csv
 import cv2 as cv2
-from log_chrominance import Histogram, rgb2uvy
+from .log_chrominance import Histogram, rgb2uvy
 
 class Augmentation:
     def __init__(self):
@@ -65,7 +65,7 @@ class Dataset:
     def _image_path(self):
         raise NotImplementedError
     def _data_samples(self):
-        return [img_name for img_name in (self.dataset_path / self.split).glob('*.png')]
+        return [img_name for img_name in sorted((self.dataset_path / self.split).glob('*.png'))]
 
     def __getitem__(self, idx):
         img_name = self.data_samples[idx]
