@@ -4,8 +4,8 @@ from scipy.optimize import minimize
 from scipy.signal import convolve2d
 
 import cv2 as cv2
-from .dataset import Dataset, LogChromHist, CubePlusPlus
-
+from ccc.dataset import Dataset, LogChromHist, CubePlusPlus
+import matplotlib.pyplot as plt
 
 def fun_p(img, filter):
     convolved = convolve2d(img, filter, mode='same', boundary='fill', fillvalue=0)
@@ -15,7 +15,7 @@ def fun_l(u_range, v_range):
     l_array = np.zeros((u_range.shape[0], v_range.shape[0], 3))
     for i in range(u_range.shape[0]):
         for j in range(v_range.shape[0]):
-            l_array[i, j] = [np.exp(-u_range[i]), 1, np.exp(-v_range[i])]
+            l_array[i, j] = [np.exp(-u_range[i]), 1, np.exp(-v_range[j])]
             l_array[i, j] /= np.linalg.norm(l_array[i, j])
     return l_array
 
@@ -29,9 +29,12 @@ def fun_c(gt_uv, l_array, u_range, v_range):
 def loss_fn(x, train_imgs, data_gt, l_array, lambda_param, u_range, v_range):
     kernel = x.reshape((int(np.sqrt(x.shape[0])), int(np.sqrt(x.shape[0]))))
     loss = 0
-    for img, gt in zip(train_imgs, data_gt):
+    for img, gt in zip(train_imgs, data_gt): 
+        # print(img)
         p = fun_p(img, kernel)
         c = cv2.resize(fun_c(gt, l_array, u_range, v_range), (p.shape[0], p.shape[1]))
+        # plt.imshow(c)
+        # plt.show()
         loss += (p * c).sum()
     loss += lambda_param * (kernel ** 2).sum()
     return loss
@@ -44,9 +47,9 @@ def fit_filter(train_imgs, data_gt, lambda_regularization, filter_size, u_ticks,
     return res.x
 
 def train(lambda_param):
-    lg = LogChromHist(0.0125, (-64 * 0.025, 64 * 0.025), (-64 * 0.025, 64 * 0.025))
+    lg = LogChromHist(0.0125, (-64 * 0.0125, 64 * 0.0125), (-64 * 0.0125, 64 * 0.0125))
     print("Loading dataset...")
-    dataset = CubePlusPlus('/media/kvsoshin/Transcend/Work/cube++/SimpleCube++', 'train', None, lg)
+    dataset = CubePlusPlus('/media/kvsoshin/Transcend/Work/cube++/SimpleCube++', 'train', 2, lg)
     train_imgs, data_gt = dataset.get_data()
     print(train_imgs.shape, data_gt.shape)
     # exit()

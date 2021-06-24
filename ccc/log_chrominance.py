@@ -111,7 +111,7 @@ class Histogram:
         
         return colorhist
 
-#@jit(parallel=True, nopython=True, fastmath=True, cache=True)
+@jit(parallel=True, nopython=True, fastmath=True, cache=True)
 def _count_hist(uvy_array, num_ticks_u, num_ticks_v, u_shift, v_shift):
     hist = np.zeros((num_ticks_u, num_ticks_v))
 
@@ -121,7 +121,7 @@ def _count_hist(uvy_array, num_ticks_u, num_ticks_v, u_shift, v_shift):
             hist[int(uvy_array[i][0]) - u_shift, int(uvy_array[i][1]) - v_shift] += uvy_array[i][2]
     return hist
 
-#@jit(parallel=True, nopython=True, fastmath=True, cache=True)
+@jit(parallel=True, nopython=True, fastmath=True, cache=True)
 def _count_color_hist(uvy_array, rgb_array, num_ticks_u, num_ticks_v, u_shift, v_shift):
     hist = np.zeros((num_ticks_u, num_ticks_v))
     colorhist = np.zeros((num_ticks_u, num_ticks_v, 3))
